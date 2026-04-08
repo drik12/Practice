@@ -45,7 +45,7 @@ class Thread2 extends Thread {
 }
 
 // Main class
-public class DeadlockExample {
+public class DeadLockExample {
 
     public static void main(String[] args) {
 
