@@ -1,76 +1,68 @@
-// Shared class
-class Message {
+class Shared {
+    int data;
+    boolean hasData = false;
 
-    String msg;
-    boolean ready = false;
-
-    // Method to produce message
-    public synchronized void produce(String message) {
-
-        msg = message;
-        ready = true;
-
-        System.out.println("Produced: " + msg);
-
-        // Notify waiting thread
-        notify();
-    }
-
-    // Method to consume message
-    public synchronized void consume() {
-
-        // Wait until message is ready
-        while (!ready) {
+    public synchronized void produce(int value) {
+        while (hasData) {
             try {
-                wait(); // thread waits
-            } catch (InterruptedException e) {
-                System.out.println(e);
-            }
+                wait(); // wait if data not consumed
+            } catch (InterruptedException e) {}
         }
 
-        System.out.println("Consumed: " + msg);
+        data = value;
+        hasData = true;
+        System.out.println("Produced: " + value);
+
+        notify(); // notify consumer
+    }
+
+    public synchronized void consume() {
+        while (!hasData) {
+            try {
+                wait(); // wait until data is produced
+            } catch (InterruptedException e) {}
+        }
+
+        System.out.println("Consumed: " + data);
+        hasData = false;
+
+        notify(); // notify producer
     }
 }
-
-// Producer thread
 class Producer extends Thread {
+    Shared shared;
 
-    Message m;
-
-    Producer(Message m) {
-        this.m = m;
+    Producer(Shared s) {
+        shared = s;
     }
 
     public void run() {
-        m.produce("Hello World");
+        for (int i = 1; i <= 5; i++) {
+            shared.produce(i);
+        }
     }
 }
-
-// Consumer thread
 class Consumer extends Thread {
+    Shared shared;
 
-    Message m;
-
-    Consumer(Message m) {
-        this.m = m;
+    Consumer(Shared s) {
+        shared = s;
     }
 
     public void run() {
-        m.consume();
+        for (int i = 1; i <= 5; i++) {
+            shared.consume();
+        }
     }
 }
-
-// Main class
 public class WaitNotifyDemo {
-
     public static void main(String[] args) {
+        Shared shared = new Shared();
 
-        Message m = new Message();
+        Producer p = new Producer(shared);
+        Consumer c = new Consumer(shared);
 
-        Consumer c = new Consumer(m);
-        Producer p = new Producer(m);
-
-        c.start(); // start consumer first (it will wait)
-        p.start(); // producer notifies
+        p.start();
+        c.start();
     }
 }
